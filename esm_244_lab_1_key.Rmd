@@ -46,13 +46,12 @@ wine <- read_csv("wine_data.csv")
 b. Basic wrangling with piping (%>%) refresher
 
 ```{r wine_wrangle}
-
 wine_new <- wine %>% 
   select(country, province, winery, region_1, points, price) %>% 
-  rename(state = province) %>% 
-  filter(state == "California" | state == "Oregon" | state == "Washington") %>% 
-  mutate(ppd = round(points/price,2)) %>% # points per dollar!
-  arrange(-ppd) 
+  rename(state = province) %>%  
+  filter(state == "Califonia" | state == "Oregon" | state == "Washington") %>% 
+  mutate(ppd = round(points/price,2)) %>% #points per dollar
+  arrange(-ppd)
 
 ```
 
@@ -65,8 +64,8 @@ wine_summary <- wine_new %>%
   summarize(
     mean_ppp = mean(ppd, na.rm = TRUE),
     median_ppp = median(ppd, na.rm = TRUE),
-    min = min(ppd, na.rm = TRUE),
-    count = length(state)
+    min = min(ppd , na.rm = TRUE),
+    count = length(state) # count length?
   )
 
 wine_summary
@@ -81,7 +80,8 @@ d. A few gg graphics
 wine_hists <- ggplot(wine_new, aes(x = ppd)) +
   geom_histogram(aes(fill = state), alpha = 0.7) +
   scale_fill_manual(values = c("royalblue", "mediumorchid1","orange")) +
-  facet_wrap(~state, scales = "free")
+  facet_wrap(~state, scales = "free") +
+  theme_light()
 
 wine_hists
 
@@ -120,6 +120,8 @@ a. Use st_read() in the *sf* package to read in shape file data. You'll need to 
 
 ca_counties <- st_read(dsn = ".", layer = "CA_Counties_TIGER2016")
 
+ca_counties <- st_read(dsn = "." , layer = "CA_Counties_TIGER2016")
+
 ```
 
 A **really** cool thing about the *sf* package is that geometries are sticky - that means that we basically get to work with spatial attributes like a normal tibble/data frame, but the geometries (spatial information) stick to it. 
@@ -132,6 +134,12 @@ ca_land <- ca_counties %>%
   select(NAME, ALAND)
 
 # plot(ca_land)
+
+ca_land <- ca_counties %>% 
+  select(NAME, ALAND)
+
+plot(ca_land)
+
 
 ```
 
@@ -146,6 +154,15 @@ ca_pop_inc <- read_csv("ca_pop_inc.csv") %>%
 # Join the two: 
 ca_df <- full_join(ca_land, ca_pop_inc) %>% 
   select(NAME, MedFamilyIncome)
+
+####
+
+ca_pop_inc <- read_csv("ca_pop_inc.csv") %>% 
+  rename(NAME = COUNTY)
+
+ca_df <- full_join(ca_land, ca_pop_inc) %>% 
+          select(NAME, MedFamilyIncome)
+
 ```
 
 d. Use geom_sf to create a map using ggplot
@@ -159,6 +176,12 @@ ca_income <- ggplot(ca_df) +
 
 ca_income
 
+ca_income <- ggplot(ca_df) + 
+  geom_sf(aes(fill = MedFamilyIncome), color = "white", size = 0.2) +
+  scale_fill_gradientn(colors = c("blue","mediumorchid1","orange")) +
+  theme_minimal()
+ca_income
+
 ```
 
 e. ...or using leaflet
@@ -167,10 +190,12 @@ e. ...or using leaflet
 
 # Show that this doesn't work:
 
-#leaflet(ca_df) %>% 
+# leaflet(ca_df) %>% 
 #  addPolygons() 
 
 # Oh no, the projection is wrong! We need it to match the projection that leaflet uses (WGS84)
+
+ca_df_transform <- st_transform(ca_df, crs = 4326)
 
 ca_df_transform <- st_transform(ca_df, crs = 4326)
 
